@@ -12,6 +12,14 @@ pygame.mixer.init()
 click_sound = pygame.mixer.Sound("assets/sound/click.mp3")
 win_sound = pygame.mixer.Sound("assets/sound/win.mp3")
 
+#Images
+ai_button_img = pygame.image.load("assets/images/ai-mode.png")
+multi_button_img = pygame.image.load("assets/images/multiplayer.png")
+easy_button_img = pygame.image.load("assets/images/lazy.png")
+normal_button_img = pygame.image.load("assets/images/normal.png")
+hard_button_img = pygame.image.load("assets/images/difficult.png")
+restart_button_img = pygame.image.load("assets/images/restart.png")
+
 
 # Constants
 WIDTH, HEIGHT = 600, 600
@@ -86,6 +94,37 @@ def draw_hover(moves, boards_won, current_board, hover_cell, turn):
        boards_won[board_index] == "":
         rect = pygame.Rect(global_x * CELL_SIZE, global_y * CELL_SIZE, CELL_SIZE, CELL_SIZE)
         pygame.draw.rect(screen, (0, 255, 0), rect, 3)  # Solid green outline
+
+class Button:
+    def __init__(self, image, pos, scale=1.0):
+        width = image.get_width()
+        height = image.get_height()
+        self.image = pygame.transform.scale(image, (int(width * scale), int(height * scale)))
+        self.rect = self.image.get_rect(center=pos)
+        self.clicked = False
+
+    def draw(self, surface):
+        action = False
+        mouse_pos = pygame.mouse.get_pos()
+
+        if self.rect.collidepoint(mouse_pos):
+            # Optional: hover effect (scale up)
+            hover_image = pygame.transform.scale(self.image, (int(self.rect.width * 1.05), int(self.rect.height * 1.05)))
+            hover_rect = hover_image.get_rect(center=self.rect.center)
+            surface.blit(hover_image, hover_rect)
+        else:
+            surface.blit(self.image, self.rect)
+
+        # Click detection
+        if pygame.mouse.get_pressed()[0] and self.rect.collidepoint(mouse_pos) and not self.clicked:
+            self.clicked = True
+            click_sound.play()
+            action = True
+        elif not pygame.mouse.get_pressed()[0]:
+            self.clicked = False
+
+
+        return action
 
 def check_win(board):
     lines = [
@@ -180,27 +219,51 @@ def ai_move(moves, boards_won, current_board, difficulty="normal"):
 def reset_game():
     return [["" for _ in range(9)] for _ in range(9)], ["" for _ in range(9)], "X", None, "", False
 
-def main():
-    hover_cell = [0, 0]  # global coordinates (0-8, 0-8)
-    moves, boards_won, turn, current_board, winner, ai_mode = reset_game()
+def select_mode():
+    ai_button = Button(ai_button_img, (WIDTH // 2, HEIGHT // 2 - 80))
+    multi_button = Button(multi_button_img, (WIDTH // 2, HEIGHT // 2 + 80))
 
-    selecting_mode = True
-    while selecting_mode:
+    while True:
         screen.fill(WHITE)
-        title = FONT.render("Press A for AI Mode or M for Multiplayer", True, BLACK)
-        screen.blit(title, (WIDTH // 2 - title.get_width() // 2, HEIGHT // 2 - 40))
-        pygame.display.flip()
+        if ai_button.draw(screen):
+            return True
+        if multi_button.draw(screen):
+            return False
+
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit()
                 sys.exit()
-            if event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_a:
-                    ai_mode = True
-                    selecting_mode = False
-                elif event.key == pygame.K_m:
-                    ai_mode = False
-                    selecting_mode = False
+
+        pygame.display.update()
+        clock.tick(60)
+
+def select_difficulty():
+    easy_btn = Button(easy_button_img, (WIDTH // 2, HEIGHT // 2 - 120))
+    normal_btn = Button(normal_button_img, (WIDTH // 2, HEIGHT // 2))
+    hard_btn = Button(hard_button_img, (WIDTH // 2, HEIGHT // 2 + 120))
+
+    while True:
+        screen.fill(WHITE)
+        if easy_btn.draw(screen):
+            return "easy"
+        if normal_btn.draw(screen):
+            return "normal"
+        if hard_btn.draw(screen):
+            return "hard"
+
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+
+        pygame.display.update()
+        clock.tick(60)
+
+def main():
+    moves, boards_won, turn, current_board, winner, ai_mode = reset_game()
+
+    ai_mode = select_mode()
 
     difficulty = "normal"
     if ai_mode:
@@ -210,6 +273,7 @@ def main():
             prompt = FONT.render("Press 1 (Easy), 2 (Normal), 3 (Hard)", True, BLACK)
             screen.blit(prompt, (WIDTH // 2 - prompt.get_width() // 2, HEIGHT // 2))
             pygame.display.flip()
+            difficulty = select_difficulty()
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     pygame.quit()
@@ -234,6 +298,8 @@ def main():
         turn_text = FONT.render(f"{turn}'s Turn", True, turn_color)
         screen.blit(turn_text, (WIDTH // 2 - turn_text.get_width() // 2, HEIGHT - 30))
 
+        win_sound_played = False
+
         if winner:
             text = FONT.render(f"{winner} wins!", True, BLACK)
             screen.blit(text, (WIDTH // 2 - 70, HEIGHT - 40))
@@ -255,23 +321,29 @@ def main():
 
             if event.type == pygame.KEYDOWN and event.key == pygame.K_r:
                 moves, boards_won, turn, current_board, winner, ai_mode = reset_game()
-                selecting_mode = True
-                while selecting_mode:
-                    screen.fill(WHITE)
-                    title = FONT.render("Press A for AI Mode or M for Multiplayer", True, BLACK)
-                    screen.blit(title, (WIDTH // 2 - title.get_width() // 2, HEIGHT // 2 - 20))
-                    pygame.display.flip()
-                    for event in pygame.event.get():
-                        if event.type == pygame.QUIT:
-                            pygame.quit()
-                            sys.exit()
-                        if event.type == pygame.KEYDOWN:
-                            if event.key == pygame.K_a:
-                                ai_mode = True
-                                selecting_mode = False
-                            elif event.key == pygame.K_m:
-                                ai_mode = False
-                                selecting_mode = False
+                ai_mode = select_mode()
+                if ai_mode:
+                    selecting_difficulty = True
+                    while selecting_difficulty:
+                        screen.fill(WHITE)
+                        prompt = FONT.render("Press 1 (Easy), 2 (Normal), 3 (Hard)", True, BLACK)
+                        screen.blit(prompt, (WIDTH // 2 - prompt.get_width() // 2, HEIGHT // 2))
+                        pygame.display.flip()
+                        difficulty = select_difficulty()
+                        for event in pygame.event.get():
+                            if event.type == pygame.QUIT:
+                                pygame.quit()
+                                sys.exit()
+                            if event.type == pygame.KEYDOWN:
+                                if event.key == pygame.K_1:
+                                    difficulty = "easy"
+                                    selecting_difficulty = False
+                                elif event.key == pygame.K_2:
+                                    difficulty = "normal"
+                                    selecting_difficulty = False
+                                elif event.key == pygame.K_3:
+                                    difficulty = "hard"
+                                    selecting_difficulty = False
 
             if event.type == pygame.MOUSEBUTTONDOWN and winner == "" and (not ai_mode or turn == "X"):
                 pos = pygame.mouse.get_pos()
@@ -298,9 +370,7 @@ def main():
                 if winner:
                     win_sound.play()
                 turn = "O" if turn == "X" else "X"
-
         clock.tick(60)
-
     pygame.quit()
     sys.exit()
 
