@@ -1,0 +1,4 @@
+Add Checkmate code
+Fix the difficulty button
+Create extra space outside the playing the filled 
+Add help and restart

@@ -1,9 +1,10 @@
 import pygame
 import sys
 import random
-import time
-import math
 
+logo = pygame.image.load('assets/images/logo.png')
+logo = pygame.transform.scale(logo, (50, 50))
+pygame.display.set_icon(logo)
 
 pygame.init()
 pygame.mixer.init()
@@ -304,6 +305,11 @@ def main():
             text = FONT.render(f"{winner} wins!", True, BLACK)
             screen.blit(text, (WIDTH // 2 - 70, HEIGHT - 40))
             win_sound.play()
+
+        if not winner:
+            turn_text = FONT.render(f"{turn}'s Turn", True, turn_color)
+            screen.blit(turn_text, (WIDTH // 2 - turn_text.get_width() // 2, HEIGHT - 30))
+
 
         pygame.display.flip()
 
