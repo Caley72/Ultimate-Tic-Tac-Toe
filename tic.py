@@ -9,8 +9,8 @@ pygame.init()
 pygame.mixer.init()
 
 #Sound Variables
-click_sound = pygame.mixer.Sound("click.wav")
-win_sound = pygame.mixer.Sound("win.wav")
+click_sound = pygame.mixer.Sound("assets/sound/click.mp3")
+win_sound = pygame.mixer.Sound("assets/sound/win.mp3")
 
 
 # Constants
@@ -73,8 +73,6 @@ def draw_moves(moves, boards_won, current_board):
             center = (bx * 3 * CELL_SIZE + CELL_SIZE * 1.5, by * 3 * CELL_SIZE + CELL_SIZE * 1.5)
             color = GREEN if boards_won[i] == "X" else RED
             pygame.draw.circle(screen, color, center, CELL_SIZE)
-            #pulse = 5 * (1 + math.sin(elapsed * 4))
-            #pygame.draw.circle(screen, color, center, int(CELL_SIZE + pulse), 5) fix later
 
 def draw_hover(moves, boards_won, current_board, hover_cell, turn):
     global_x, global_y = hover_cell
@@ -87,7 +85,7 @@ def draw_hover(moves, boards_won, current_board, hover_cell, turn):
        moves[board_index][cell_index] == "" and \
        boards_won[board_index] == "":
         rect = pygame.Rect(global_x * CELL_SIZE, global_y * CELL_SIZE, CELL_SIZE, CELL_SIZE)
-        pygame.draw.rect(screen, (0, 255, 0, 50), rect, 3)
+        pygame.draw.rect(screen, (0, 255, 0), rect, 3)  # Solid green outline
 
 def check_win(board):
     lines = [
@@ -227,15 +225,12 @@ def main():
                         difficulty = "hard"
                         selecting_difficulty = False
 
-    start_time = time.time()
     running = True
     while running:
-        elapsed = time.time() - start_time
         screen.fill(WHITE)
         draw_grid()
         draw_moves(moves, boards_won, current_board)
         turn_color = RED if turn == "X" else BLUE
-        #pulse_alpha = 100 + int(50 * math.sin(elapsed * 3))
         turn_text = FONT.render(f"{turn}'s Turn", True, turn_color)
         screen.blit(turn_text, (WIDTH // 2 - turn_text.get_width() // 2, HEIGHT - 30))
 
@@ -243,8 +238,6 @@ def main():
             text = FONT.render(f"{winner} wins!", True, BLACK)
             screen.blit(text, (WIDTH // 2 - 70, HEIGHT - 40))
             win_sound.play()
-
-
 
         pygame.display.flip()
 
@@ -299,8 +292,11 @@ def main():
                     current_board = None
                 else:
                     current_board = next_board
-
+                if check_win(moves[board_index]):
+                    boards_won[board_index] = turn
                 winner = game_winner(boards_won)
+                if winner:
+                    win_sound.play()
                 turn = "O" if turn == "X" else "X"
 
         clock.tick(60)
