@@ -12,6 +12,14 @@ pygame.mixer.init()
 #Sound Variables
 click_sound = pygame.mixer.Sound("assets/sound/click.mp3")
 win_sound = pygame.mixer.Sound("assets/sound/win.mp3")
+#Background Music (Create a button at the select mode page for choosing background music)
+Cinematic_Dark = pygame.mixer.Sound("assets/sound/cinematic-dark-trailer-130489.mp3")
+Coding_Night = pygame.mixer.Sound("assets/sound/coding-night-112186.mp3")
+Abstract_Glitch = pygame.mixer.Sound("assets/sound/experimental-abstract-tech-glitch-179496.mp3")
+#Dark_Stars = pygame.mixer.Sound("assets/sound/dark-stars.mp3")
+Energetic_Rock = pygame.mixer.Sound("assets/sound/energetic-rock-trailer-140906.mp3")
+
+Abstract_Glitch.play()
 
 #Images
 ai_button_img = pygame.image.load("assets/images/ai-mode.png")
@@ -20,7 +28,6 @@ easy_button_img = pygame.image.load("assets/images/lazy.png")
 normal_button_img = pygame.image.load("assets/images/normal.png")
 hard_button_img = pygame.image.load("assets/images/difficult.png")
 restart_button_img = pygame.image.load("assets/images/restart.png")
-
 
 # Constants
 WIDTH, HEIGHT = 600, 600
@@ -123,8 +130,6 @@ class Button:
             action = True
         elif not pygame.mouse.get_pressed()[0]:
             self.clicked = False
-
-
         return action
 
 def check_win(board):
@@ -216,10 +221,8 @@ def ai_move(moves, boards_won, current_board, difficulty="normal"):
     elif difficulty == "hard":
         _, b, c = minimax(moves, boards_won, current_board, depth=4, alpha=float("-inf"), beta=float("inf"), is_max=True, ai="O", player="X")
         return b, c
-
 def reset_game():
     return [["" for _ in range(9)] for _ in range(9)], ["" for _ in range(9)], "X", None, "", False
-
 def select_mode():
     ai_button = Button(ai_button_img, (WIDTH // 2, HEIGHT // 2 - 80))
     multi_button = Button(multi_button_img, (WIDTH // 2, HEIGHT // 2 + 80))
@@ -238,7 +241,6 @@ def select_mode():
 
         pygame.display.update()
         clock.tick(60)
-
 def select_difficulty():
     easy_btn = Button(easy_button_img, (WIDTH // 2, HEIGHT // 2 - 120))
     normal_btn = Button(normal_button_img, (WIDTH // 2, HEIGHT // 2))
@@ -260,7 +262,6 @@ def select_difficulty():
 
         pygame.display.update()
         clock.tick(60)
-
 def main():
     moves, boards_won, turn, current_board, winner, ai_mode = reset_game()
 
@@ -299,12 +300,13 @@ def main():
         turn_text = FONT.render(f"{turn}'s Turn", True, turn_color)
         screen.blit(turn_text, (WIDTH // 2 - turn_text.get_width() // 2, HEIGHT - 30))
 
-        win_sound_played = False
-
         if winner:
             text = FONT.render(f"{winner} wins!", True, BLACK)
             screen.blit(text, (WIDTH // 2 - 70, HEIGHT - 40))
-            win_sound.play()
+
+        if not winner and all(board != "" or all(cell != "" for cell in moves[i]) for i, board in enumerate(boards_won)):
+            winner = "Tie"
+
 
         if not winner:
             turn_text = FONT.render(f"{turn}'s Turn", True, turn_color)
@@ -370,11 +372,11 @@ def main():
                     current_board = None
                 else:
                     current_board = next_board
-                if check_win(moves[board_index]):
-                    boards_won[board_index] = turn
                 winner = game_winner(boards_won)
                 if winner:
                     win_sound.play()
+                elif all(board != "" or all(cell != "" for cell in moves[i]) for i, board in enumerate(boards_won)):
+                    winner = "Tie, all"
                 turn = "O" if turn == "X" else "X"
         clock.tick(60)
     pygame.quit()

@@ -1,4 +1,14 @@
-Add Checkmate code
+Bugs//
+Remove the turn indicator when a winner is found
 Fix the difficulty button
-Create extra space outside the playing the filled 
-Add help and restart
+Play the winner sound once
+New additions and Changes//
+Add Checkmate code (when there is no more moves)
+Create extra space outside the playing the filled (Fullscreen)
+Add help and restart to all screens
+Add a loading screen
+Add credits
+Multiple Update//
+Add multiplayer over a server or WIFI connection
+Add server multiplayer info to help
+Add loss and win sounds code for server multiplayer
