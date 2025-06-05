@@ -2,39 +2,37 @@ import pygame
 import sys
 import random
 
+pygame.init()
+pygame.mixer.init()
+
+# Load and scale the icon
 logo = pygame.image.load('assets/images/logo.png')
 logo = pygame.transform.scale(logo, (50, 50))
 pygame.display.set_icon(logo)
 
-pygame.init()
-pygame.mixer.init()
-
-#Sound Variables
+# Sound Variables
 click_sound = pygame.mixer.Sound("assets/sound/click.mp3")
 win_sound = pygame.mixer.Sound("assets/sound/win.mp3")
-#Background Music (Create a button at the select mode page for choosing background music)
 Cinematic_Dark = pygame.mixer.Sound("assets/sound/cinematic-dark-trailer-130489.mp3")
 Coding_Night = pygame.mixer.Sound("assets/sound/coding-night-112186.mp3")
 Abstract_Glitch = pygame.mixer.Sound("assets/sound/experimental-abstract-tech-glitch-179496.mp3")
-#Dark_Stars = pygame.mixer.Sound("assets/sound/dark-stars.mp3")
 Energetic_Rock = pygame.mixer.Sound("assets/sound/energetic-rock-trailer-140906.mp3")
-
 Abstract_Glitch.play()
 
-#Images
+# Images
 ai_button_img = pygame.image.load("assets/images/ai-mode.png")
 multi_button_img = pygame.image.load("assets/images/multiplayer.png")
 easy_button_img = pygame.image.load("assets/images/lazy.png")
 normal_button_img = pygame.image.load("assets/images/normal.png")
 hard_button_img = pygame.image.load("assets/images/difficult.png")
 restart_button_img = pygame.image.load("assets/images/restart.png")
+quit_button_img = pygame.image.load("assets/images/quit.png")
 
 # Constants
 WIDTH, HEIGHT = 600, 600
 GRID_SIZE = 3
 CELL_SIZE = WIDTH // (GRID_SIZE * GRID_SIZE)
 LINE_WIDTH = 3
-
 WHITE = (255, 255, 255)
 BLACK = (0, 0, 0)
 GRAY = (200, 200, 200)
@@ -44,21 +42,30 @@ RED = (255, 50, 50)
 
 FONT = pygame.font.SysFont(None, 40)
 
-screen = pygame.display.set_mode((WIDTH, HEIGHT))
+screen_info = pygame.display.Info()
+SCREEN_WIDTH, SCREEN_HEIGHT = screen_info.current_w, screen_info.current_h
+screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.FULLSCREEN)
 pygame.display.set_caption("Ultimate Tic Tac Toe")
+
+OFFSET_X = (SCREEN_WIDTH - WIDTH) // 2
+OFFSET_Y = (SCREEN_HEIGHT - HEIGHT) // 2
 
 clock = pygame.time.Clock()
 
 def draw_grid():
     for i in range(1, GRID_SIZE):
-        pygame.draw.line(screen, BLACK, (0, i * HEIGHT // GRID_SIZE), (WIDTH, i * HEIGHT // GRID_SIZE), 5)
-        pygame.draw.line(screen, BLACK, (i * WIDTH // GRID_SIZE, 0), (i * WIDTH // GRID_SIZE, HEIGHT), 5)
+        pygame.draw.line(screen, BLACK, (OFFSET_X, OFFSET_Y + i * HEIGHT // GRID_SIZE), (OFFSET_X + WIDTH, OFFSET_Y + i * HEIGHT // GRID_SIZE), 5)
+        pygame.draw.line(screen, BLACK, (OFFSET_X + i * WIDTH // GRID_SIZE, OFFSET_Y), (OFFSET_X + i * WIDTH // GRID_SIZE, OFFSET_Y + HEIGHT), 5)
     for i in range(1, GRID_SIZE * GRID_SIZE):
-        pygame.draw.line(screen, GRAY, (0, i * CELL_SIZE), (WIDTH, i * CELL_SIZE), 1)
-        pygame.draw.line(screen, GRAY, (i * CELL_SIZE, 0), (i * CELL_SIZE, HEIGHT), 1)
+        pygame.draw.line(screen, GRAY, (OFFSET_X, OFFSET_Y + i * CELL_SIZE), (OFFSET_X + WIDTH, OFFSET_Y + i * CELL_SIZE), 1)
+        pygame.draw.line(screen, GRAY, (OFFSET_X + i * CELL_SIZE, OFFSET_Y), (OFFSET_X + i * CELL_SIZE, OFFSET_Y + HEIGHT), 1)
 
 def get_board_and_cell(pos):
     x, y = pos
+    x -= OFFSET_X
+    y -= OFFSET_Y
+    if x < 0 or y < 0 or x >= WIDTH or y >= HEIGHT:
+        return None, None
     board_x = x // (CELL_SIZE * GRID_SIZE)
     board_y = y // (CELL_SIZE * GRID_SIZE)
     cell_x = (x % (CELL_SIZE * GRID_SIZE)) // CELL_SIZE
@@ -72,21 +79,21 @@ def draw_moves(moves, boards_won, current_board):
             if val:
                 bx, by = board % 3, board // 3
                 cx, cy = cell % 3, cell // 3
-                px = (bx * 3 + cx) * CELL_SIZE + CELL_SIZE // 2
-                py = (by * 3 + cy) * CELL_SIZE + CELL_SIZE // 2
+                px = OFFSET_X + (bx * 3 + cx) * CELL_SIZE + CELL_SIZE // 2
+                py = OFFSET_Y + (by * 3 + cy) * CELL_SIZE + CELL_SIZE // 2
                 text = FONT.render(val, True, RED if val == "X" else BLUE)
                 text_rect = text.get_rect(center=(px, py))
                 screen.blit(text, text_rect)
 
     if current_board is not None and boards_won[current_board] == "":
         bx, by = current_board % 3, current_board // 3
-        rect = pygame.Rect(bx * 3 * CELL_SIZE, by * 3 * CELL_SIZE, 3 * CELL_SIZE, 3 * CELL_SIZE)
+        rect = pygame.Rect(OFFSET_X + bx * 3 * CELL_SIZE, OFFSET_Y + by * 3 * CELL_SIZE, 3 * CELL_SIZE, 3 * CELL_SIZE)
         pygame.draw.rect(screen, BLUE, rect, 4)
 
     for i in range(9):
         if boards_won[i]:
             bx, by = i % 3, i // 3
-            center = (bx * 3 * CELL_SIZE + CELL_SIZE * 1.5, by * 3 * CELL_SIZE + CELL_SIZE * 1.5)
+            center = (OFFSET_X + bx * 3 * CELL_SIZE + CELL_SIZE * 1.5, OFFSET_Y + by * 3 * CELL_SIZE + CELL_SIZE * 1.5)
             color = GREEN if boards_won[i] == "X" else RED
             pygame.draw.circle(screen, color, center, CELL_SIZE)
 
@@ -100,8 +107,8 @@ def draw_hover(moves, boards_won, current_board, hover_cell, turn):
     if (current_board is None or current_board == board_index) and \
        moves[board_index][cell_index] == "" and \
        boards_won[board_index] == "":
-        rect = pygame.Rect(global_x * CELL_SIZE, global_y * CELL_SIZE, CELL_SIZE, CELL_SIZE)
-        pygame.draw.rect(screen, (0, 255, 0), rect, 3)  # Solid green outline
+        rect = pygame.Rect(OFFSET_X + global_x * CELL_SIZE, OFFSET_Y + global_y * CELL_SIZE, CELL_SIZE, CELL_SIZE)
+        pygame.draw.rect(screen, (0, 255, 0), rect, 3)# Solid green outline
 
 class Button:
     def __init__(self, image, pos, scale=1.0):
@@ -224,8 +231,8 @@ def ai_move(moves, boards_won, current_board, difficulty="normal"):
 def reset_game():
     return [["" for _ in range(9)] for _ in range(9)], ["" for _ in range(9)], "X", None, "", False
 def select_mode():
-    ai_button = Button(ai_button_img, (WIDTH // 2, HEIGHT // 2 - 80))
-    multi_button = Button(multi_button_img, (WIDTH // 2, HEIGHT // 2 + 80))
+    ai_button = Button(ai_button_img, (SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 - 80))
+    multi_button = Button(multi_button_img, (SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 + 80))
 
     while True:
         screen.fill(WHITE)
@@ -242,9 +249,9 @@ def select_mode():
         pygame.display.update()
         clock.tick(60)
 def select_difficulty():
-    easy_btn = Button(easy_button_img, (WIDTH // 2, HEIGHT // 2 - 120))
-    normal_btn = Button(normal_button_img, (WIDTH // 2, HEIGHT // 2))
-    hard_btn = Button(hard_button_img, (WIDTH // 2, HEIGHT // 2 + 120))
+    easy_btn = Button(easy_button_img, (SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 - 120))
+    normal_btn = Button(normal_button_img, (SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2))
+    hard_btn = Button(hard_button_img, (SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 + 120))
 
     while True:
         screen.fill(WHITE)
@@ -273,7 +280,7 @@ def main():
         while selecting_difficulty:
             screen.fill(WHITE)
             prompt = FONT.render("Press 1 (Easy), 2 (Normal), 3 (Hard)", True, BLACK)
-            screen.blit(prompt, (WIDTH // 2 - prompt.get_width() // 2, HEIGHT // 2))
+            screen.blit(prompt, (SCREEN_WIDTH // 2 - prompt.get_width() // 2, SCREEN_HEIGHT // 2))
             pygame.display.flip()
             difficulty = select_difficulty()
             for event in pygame.event.get():
@@ -335,7 +342,8 @@ def main():
                     while selecting_difficulty:
                         screen.fill(WHITE)
                         prompt = FONT.render("Press 1 (Easy), 2 (Normal), 3 (Hard)", True, BLACK)
-                        screen.blit(prompt, (WIDTH // 2 - prompt.get_width() // 2, HEIGHT // 2))
+                        screen.blit(prompt, (SCREEN_WIDTH // 2 - prompt.get_width() // 2, SCREEN_HEIGHT // 2))
+
                         pygame.display.flip()
                         difficulty = select_difficulty()
                         for event in pygame.event.get():
