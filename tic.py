@@ -1,6 +1,7 @@
 import pygame
 import sys
 import random
+import time
 
 pygame.init()
 pygame.mixer.init()
@@ -51,6 +52,15 @@ OFFSET_X = (SCREEN_WIDTH - WIDTH) // 2
 OFFSET_Y = (SCREEN_HEIGHT - HEIGHT) // 2
 
 clock = pygame.time.Clock()
+#Colors
+WHITE = (255, 255, 255)
+BLACK = (0, 0, 0)
+GRAY = (200, 200, 200)
+BLUE = (100, 100, 255)
+GREEN = (0, 200, 0)
+RED = (255, 50, 50)
+DARK_GRAY = (50, 50, 50)  # ← Add this
+
 
 def draw_grid():
     for i in range(1, GRID_SIZE):
@@ -229,17 +239,18 @@ def ai_move(moves, boards_won, current_board, difficulty="normal"):
         _, b, c = minimax(moves, boards_won, current_board, depth=4, alpha=float("-inf"), beta=float("inf"), is_max=True, ai="O", player="X")
         return b, c
 def reset_game():
-    return [["" for _ in range(9)] for _ in range(9)], ["" for _ in range(9)], "X", None, "", False
+    return [["" for _ in range(9)] for _ in range(9)], ["" for _ in range(9)], "X", None, "", False 
 def select_mode():
     ai_button = Button(ai_button_img, (SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 - 80))
     multi_button = Button(multi_button_img, (SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 + 80))
-
     while True:
         screen.fill(WHITE)
         if ai_button.draw(screen):
             return True
         if multi_button.draw(screen):
             return False
+        if handle_system_buttons():   # Restart inside menus acts like "Back to main game"
+            return None               # caller will treat None as "cancel / restart"
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -261,46 +272,106 @@ def select_difficulty():
             return "normal"
         if hard_btn.draw(screen):
             return "hard"
+        if handle_system_buttons():   # Restart inside menus acts like "Back to main game"
+            return None               # caller will treat None as "cancel / restart"
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit()
                 sys.exit()
-
         pygame.display.update()
         clock.tick(60)
+
+# ── Top-right utility buttons ──────────────────────────────────────────
+BUTTON_SCALE  = 0.5          # shrink large PNGs
+BUTTON_PAD    = 20           # distance from screen edges / between buttons
+
+# Quit button (top-right corner)
+quit_button = Button(
+    quit_button_img,
+    (
+        SCREEN_WIDTH - int(quit_button_img.get_width()  * BUTTON_SCALE / 2) - BUTTON_PAD,
+        BUTTON_PAD + int(quit_button_img.get_height()   * BUTTON_SCALE / 2)
+    ),
+    scale=BUTTON_SCALE
+)
+
+# Restart button (directly under quit)
+restart_button = Button(
+    restart_button_img,
+    (
+        quit_button.rect.centerx,
+        quit_button.rect.bottom + BUTTON_PAD + int(restart_button_img.get_height() * BUTTON_SCALE / 2)
+    ),
+    scale=BUTTON_SCALE
+)
+# ───────────────────────────────────────────────────────────────────────
+FONT = pygame.font.SysFont(None, 40)
+BIG_FONT = pygame.font.SysFont(None, 80)  # Add this line
+def show_loading_screen(duration=2.5):  # duration in seconds
+    start_time = time.time()
+    bar_width = 400
+    bar_height = 30
+    bar_x = SCREEN_WIDTH // 2 - bar_width // 2
+    bar_y = SCREEN_HEIGHT // 2 + 60
+    load_color = (100, 200, 100)
+    border_color = WHITE
+
+    while time.time() - start_time < duration:
+        screen.fill(DARK_GRAY)
+
+        # Title text
+        text = BIG_FONT.render("Loading...", True, WHITE)
+        screen.blit(text, (SCREEN_WIDTH // 2 - text.get_width() // 2, SCREEN_HEIGHT // 2 - 50))
+
+        # Calculate progress
+        elapsed = time.time() - start_time
+        progress = min(elapsed / duration, 1)
+        current_width = int(bar_width * progress)
+
+        # Draw bar border
+        pygame.draw.rect(screen, border_color, (bar_x, bar_y, bar_width, bar_height), 2)
+
+        # Draw filled bar
+        pygame.draw.rect(screen, load_color, (bar_x, bar_y, current_width, bar_height))
+
+        pygame.display.flip()
+        clock.tick(60)
+
+def handle_system_buttons():
+    """Draw Quit / Restart and return True if a restart was clicked."""
+    # Draw Quit first so it appears above Restart in z-order
+    if quit_button.draw(screen):
+        pygame.quit()
+        sys.exit()
+
+    if restart_button.draw(screen):
+        return True        # signal caller to reset game
+
+    return False
+
 def main():
     moves, boards_won, turn, current_board, winner, ai_mode = reset_game()
-
+    show_loading_screen()
     ai_mode = select_mode()
-
     difficulty = "normal"
     if ai_mode:
-        selecting_difficulty = True
-        while selecting_difficulty:
-            screen.fill(WHITE)
-            prompt = FONT.render("Press 1 (Easy), 2 (Normal), 3 (Hard)", True, BLACK)
-            screen.blit(prompt, (SCREEN_WIDTH // 2 - prompt.get_width() // 2, SCREEN_HEIGHT // 2))
-            pygame.display.flip()
-            difficulty = select_difficulty()
-            for event in pygame.event.get():
-                if event.type == pygame.QUIT:
-                    pygame.quit()
-                    sys.exit()
-                if event.type == pygame.KEYDOWN:
-                    if event.key == pygame.K_1:
-                        difficulty = "easy"
-                        selecting_difficulty = False
-                    elif event.key == pygame.K_2:
-                        difficulty = "normal"
-                        selecting_difficulty = False
-                    elif event.key == pygame.K_3:
-                        difficulty = "hard"
-                        selecting_difficulty = False
+        difficulty = select_difficulty()
+        print(f"Selected difficulty: {difficulty}")
+
 
     running = True
     while running:
         screen.fill(WHITE)
+        # System buttons (Quit / Restart)
+        if handle_system_buttons():    
+            show_loading_screen()        # user clicked Restart
+            moves, boards_won, turn, current_board, winner, ai_mode = reset_game()
+            ai_mode = select_mode()            # you already have this logic in your reset section
+            if ai_mode:
+                difficulty = select_difficulty()
+            continue                           # skip the rest of this frame
+
         draw_grid()
         draw_moves(moves, boards_won, current_board)
         turn_color = RED if turn == "X" else BLUE
@@ -318,6 +389,7 @@ def main():
         if not winner:
             turn_text = FONT.render(f"{turn}'s Turn", True, turn_color)
             screen.blit(turn_text, (WIDTH // 2 - turn_text.get_width() // 2, HEIGHT - 30))
+
 
 
         pygame.display.flip()
@@ -338,28 +410,7 @@ def main():
                 moves, boards_won, turn, current_board, winner, ai_mode = reset_game()
                 ai_mode = select_mode()
                 if ai_mode:
-                    selecting_difficulty = True
-                    while selecting_difficulty:
-                        screen.fill(WHITE)
-                        prompt = FONT.render("Press 1 (Easy), 2 (Normal), 3 (Hard)", True, BLACK)
-                        screen.blit(prompt, (SCREEN_WIDTH // 2 - prompt.get_width() // 2, SCREEN_HEIGHT // 2))
-
-                        pygame.display.flip()
-                        difficulty = select_difficulty()
-                        for event in pygame.event.get():
-                            if event.type == pygame.QUIT:
-                                pygame.quit()
-                                sys.exit()
-                            if event.type == pygame.KEYDOWN:
-                                if event.key == pygame.K_1:
-                                    difficulty = "easy"
-                                    selecting_difficulty = False
-                                elif event.key == pygame.K_2:
-                                    difficulty = "normal"
-                                    selecting_difficulty = False
-                                elif event.key == pygame.K_3:
-                                    difficulty = "hard"
-                                    selecting_difficulty = False
+                    difficulty = select_difficulty()
 
             if event.type == pygame.MOUSEBUTTONDOWN and winner == "" and (not ai_mode or turn == "X"):
                 pos = pygame.mouse.get_pos()
