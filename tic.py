@@ -23,11 +23,10 @@ Abstract_Glitch.play()
 # Images
 ai_button_img = pygame.image.load("assets/images/ai-mode.png")
 multi_button_img = pygame.image.load("assets/images/multiplayer.png")
-easy_button_img = pygame.image.load("assets/images/lazy.png")
-normal_button_img = pygame.image.load("assets/images/normal.png")
-hard_button_img = pygame.image.load("assets/images/difficult.png")
 restart_button_img = pygame.image.load("assets/images/restart.png")
 quit_button_img = pygame.image.load("assets/images/quit.png")
+info_btn_img = pygame.image.load("assets/images/info.png")
+sound_btn_img = pygame.image.load("assets/images/sound.png")
 
 # Constants
 WIDTH, HEIGHT = 600, 600
@@ -163,16 +162,7 @@ def check_win(board):
 def game_winner(boards_won):
     return check_win(boards_won)
 
-def ai_move(moves, boards_won, current_board, difficulty="normal"):
-    def random_move():
-        valid_boards = [i for i in range(9) if boards_won[i] == "" and any(cell == "" for cell in moves[i])]
-        if current_board is not None and current_board in valid_boards:
-            board = current_board
-        else:
-            board = random.choice(valid_boards)
-        empty_cells = [i for i in range(9) if moves[board][i] == ""]
-        return board, random.choice(empty_cells)
-
+def ai_move(moves, boards_won, current_board):
     def evaluate(boards_won, ai, player):
         result = check_win(boards_won)
         if result == ai:
@@ -230,85 +220,11 @@ def ai_move(moves, boards_won, current_board, difficulty="normal"):
 
         return best_score, best_move[0], best_move[1]
 
-    if difficulty == "easy":
-        return random_move()
-    elif difficulty == "normal":
-        _, b, c = minimax(moves, boards_won, current_board, depth=2, alpha=float("-inf"), beta=float("inf"), is_max=True, ai="O", player="X")
-        return b, c
-    elif difficulty == "hard":
-        _, b, c = minimax(moves, boards_won, current_board, depth=4, alpha=float("-inf"), beta=float("inf"), is_max=True, ai="O", player="X")
-        return b, c
+    _, b, c = minimax(moves, boards_won, current_board, depth=6, alpha=float("-inf"), beta=float("inf"), is_max=True, ai="O", player="X")
+    return b, c
 def reset_game():
     return [["" for _ in range(9)] for _ in range(9)], ["" for _ in range(9)], "X", None, "", False 
-def select_mode():
-    ai_button = Button(ai_button_img, (SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 - 80))
-    multi_button = Button(multi_button_img, (SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 + 80))
-    while True:
-        screen.fill(WHITE)
-        if ai_button.draw(screen):
-            return True
-        if multi_button.draw(screen):
-            return False
-        if handle_system_buttons():   # Restart inside menus acts like "Back to main game"
-            return None               # caller will treat None as "cancel / restart"
-
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                pygame.quit()
-                sys.exit()
-
-        pygame.display.update()
-        clock.tick(60)
-def select_difficulty():
-    easy_btn = Button(easy_button_img, (SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 - 120))
-    normal_btn = Button(normal_button_img, (SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2))
-    hard_btn = Button(hard_button_img, (SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 + 120))
-
-    while True:
-        screen.fill(WHITE)
-        if easy_btn.draw(screen):
-            return "easy"
-        if normal_btn.draw(screen):
-            return "normal"
-        if hard_btn.draw(screen):
-            return "hard"
-        if handle_system_buttons():   # Restart inside menus acts like "Back to main game"
-            return None               # caller will treat None as "cancel / restart"
-
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                pygame.quit()
-                sys.exit()
-        pygame.display.update()
-        clock.tick(60)
-
-# ── Top-right utility buttons ──────────────────────────────────────────
-BUTTON_SCALE  = 0.5          # shrink large PNGs
-BUTTON_PAD    = 20           # distance from screen edges / between buttons
-
-# Quit button (top-right corner)
-quit_button = Button(
-    quit_button_img,
-    (
-        SCREEN_WIDTH - int(quit_button_img.get_width()  * BUTTON_SCALE / 2) - BUTTON_PAD,
-        BUTTON_PAD + int(quit_button_img.get_height()   * BUTTON_SCALE / 2)
-    ),
-    scale=BUTTON_SCALE
-)
-
-# Restart button (directly under quit)
-restart_button = Button(
-    restart_button_img,
-    (
-        quit_button.rect.centerx,
-        quit_button.rect.bottom + BUTTON_PAD + int(restart_button_img.get_height() * BUTTON_SCALE / 2)
-    ),
-    scale=BUTTON_SCALE
-)
-# ───────────────────────────────────────────────────────────────────────
-FONT = pygame.font.SysFont(None, 40)
-BIG_FONT = pygame.font.SysFont(None, 80)  # Add this line
-def show_loading_screen(duration=2.5):  # duration in seconds
+def show_loading_screen(duration=1.5):  # duration in seconds
     start_time = time.time()
     bar_width = 400
     bar_height = 30
@@ -338,6 +254,51 @@ def show_loading_screen(duration=2.5):  # duration in seconds
         pygame.display.flip()
         clock.tick(60)
 
+def select_mode():
+    ai_button = Button(ai_button_img, (SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 - 80))
+    multi_button = Button(multi_button_img, (SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 + 80))
+    while True:
+        screen.fill(WHITE)
+        if ai_button.draw(screen):
+            return True
+        if multi_button.draw(screen):
+            return False
+        if handle_system_buttons():
+            return None
+
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+
+        pygame.display.update()
+        clock.tick(60)
+# ── Top-right utility buttons ──────────────────────────────────────────
+BUTTON_SCALE  = 0.5          # shrink large PNGs
+BUTTON_PAD    = 20           # distance from screen edges / between buttons
+
+# Quit button (top-right corner)
+quit_button = Button(
+    quit_button_img,
+    (
+        SCREEN_WIDTH - int(quit_button_img.get_width()  * BUTTON_SCALE / 2) - BUTTON_PAD,
+        BUTTON_PAD + int(quit_button_img.get_height()   * BUTTON_SCALE / 2)
+    ),
+    scale=BUTTON_SCALE
+)
+
+# Restart button (directly under quit)
+restart_button = Button(
+    restart_button_img,
+    (
+        quit_button.rect.centerx,
+        quit_button.rect.bottom + BUTTON_PAD + int(restart_button_img.get_height() * BUTTON_SCALE / 2)
+    ),
+    scale=BUTTON_SCALE
+)
+# ───────────────────────────────────────────────────────────────────────
+FONT = pygame.font.SysFont(None, 40)
+BIG_FONT = pygame.font.SysFont(None, 80)  # Add this line
 def handle_system_buttons():
     """Draw Quit / Restart and return True if a restart was clicked."""
     # Draw Quit first so it appears above Restart in z-order
@@ -351,13 +312,20 @@ def handle_system_buttons():
     return False
 
 def main():
-    moves, boards_won, turn, current_board, winner, ai_mode = reset_game()
+    moves, boards_won, turn, current_board, winner, _ = reset_game()
     show_loading_screen()
     ai_mode = select_mode()
-    difficulty = "normal"
-    if ai_mode:
-        difficulty = select_difficulty()
-        print(f"Selected difficulty: {difficulty}")
+    show_loading_screen()
+    ai_mode = select_mode()
+    if ai_mode is None:
+        pygame.quit()
+        sys.exit()
+
+    show_loading_screen()
+
+    # We skip difficulty since it's always hardcoded now
+    difficulty = None
+
 
 
     running = True
@@ -366,12 +334,19 @@ def main():
         # System buttons (Quit / Restart)
         if handle_system_buttons():    
             show_loading_screen()        # user clicked Restart
-            moves, boards_won, turn, current_board, winner, ai_mode = reset_game()
-            ai_mode = select_mode()            # you already have this logic in your reset section
-            if ai_mode:
-                difficulty = select_difficulty()
-            continue                           # skip the rest of this frame
+            moves, boards_won, turn, current_board, winner, _ = reset_game()
+            ai_mode = select_mode()
+            if ai_mode is None:
+                pygame.quit()
+                sys.exit()
 
+            show_loading_screen()
+
+            # We skip difficulty since it's always hardcoded now
+            difficulty = None
+           # you already have this logic in your reset section
+            continue                           # skip the rest of this frame
+        # Draw the game state
         draw_grid()
         draw_moves(moves, boards_won, current_board)
         turn_color = RED if turn == "X" else BLUE
@@ -396,7 +371,7 @@ def main():
 
         if ai_mode and turn == "O" and not winner:
             pygame.time.delay(500)
-            board_index, cell_index = ai_move(moves, boards_won, current_board, difficulty)
+            board_index, cell_index = ai_move(moves, boards_won, current_board)
 
         else:
             board_index, cell_index = None, None
@@ -409,8 +384,6 @@ def main():
             if event.type == pygame.KEYDOWN and event.key == pygame.K_r:
                 moves, boards_won, turn, current_board, winner, ai_mode = reset_game()
                 ai_mode = select_mode()
-                if ai_mode:
-                    difficulty = select_difficulty()
 
             if event.type == pygame.MOUSEBUTTONDOWN and winner == "" and (not ai_mode or turn == "X"):
                 pos = pygame.mouse.get_pos()
