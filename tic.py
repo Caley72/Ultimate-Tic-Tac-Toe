@@ -2,6 +2,7 @@ import pygame
 import sys
 import random
 import time
+import os
 
 pygame.init()
 pygame.mixer.init()
@@ -27,6 +28,7 @@ restart_button_img = pygame.image.load("assets/images/restart.png")
 quit_button_img = pygame.image.load("assets/images/quit.png")
 info_btn_img = pygame.image.load("assets/images/info.png")
 sound_btn_img = pygame.image.load("assets/images/sound.png")
+back_button_img = pygame.image.load("assets/images/back.png")
 
 # Constants
 WIDTH, HEIGHT = 600, 600
@@ -40,7 +42,13 @@ BLUE = (100, 100, 255)
 GREEN = (0, 200, 0)
 RED = (255, 50, 50)
 
-FONT = pygame.font.SysFont(None, 40)
+emoji_font_path = "assets/fonts/NotoColorEmoji.ttf"
+if os.path.exists(emoji_font_path):
+    FONT = pygame.font.Font(emoji_font_path, 40)
+    BIG_FONT = pygame.font.Font(emoji_font_path, 80)
+else:
+    FONT = pygame.font.SysFont("Segoe UI Emoji", 40)
+    BIG_FONT = pygame.font.SysFont("Segoe UI Emoji", 80)
 
 screen_info = pygame.display.Info()
 SCREEN_WIDTH, SCREEN_HEIGHT = screen_info.current_w, screen_info.current_h
@@ -257,14 +265,18 @@ def show_loading_screen(duration=1.5):  # duration in seconds
 def select_mode():
     ai_button = Button(ai_button_img, (SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 - 80))
     multi_button = Button(multi_button_img, (SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 + 80))
+    help_button = Button(info_btn_img, (SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 + 200), scale=0.7)
     while True:
         screen.fill(WHITE)
         if ai_button.draw(screen):
             return True
         if multi_button.draw(screen):
             return False
-        if handle_system_buttons():
-            return None
+        if help_button.draw(screen):
+            show_rules_screen()
+        if quit_button.draw(screen):
+            pygame.quit()
+            sys.exit()
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -273,6 +285,38 @@ def select_mode():
 
         pygame.display.update()
         clock.tick(60)
+
+def show_rules_screen():
+    try:
+        with open("rule.txt", "r", encoding="utf-8") as f:
+            lines = f.readlines()
+    except Exception as e:
+        lines = [f"Error loading rules: {str(e)}"]
+
+
+    # Create the back button (top-left corner)
+    back_button = Button(back_button_img, (60, 60), scale=0.5)
+    showing = True
+    while showing:
+        screen.fill((0, 0, 0))  # Black background
+
+        # Draw the rules
+        y = 100
+        for line in lines:
+            rendered = FONT.render(line.strip(), True, WHITE)
+            screen.blit(rendered, (50, y))
+            y += 40
+
+        # Draw back button
+        if back_button.draw(screen):
+            showing = False
+
+        pygame.display.flip()
+
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
 # ── Top-right utility buttons ──────────────────────────────────────────
 BUTTON_SCALE  = 0.5          # shrink large PNGs
 BUTTON_PAD    = 20           # distance from screen edges / between buttons
@@ -296,9 +340,6 @@ restart_button = Button(
     ),
     scale=BUTTON_SCALE
 )
-# ───────────────────────────────────────────────────────────────────────
-FONT = pygame.font.SysFont(None, 40)
-BIG_FONT = pygame.font.SysFont(None, 80)  # Add this line
 def handle_system_buttons():
     """Draw Quit / Restart and return True if a restart was clicked."""
     # Draw Quit first so it appears above Restart in z-order
@@ -326,45 +367,35 @@ def main():
     # We skip difficulty since it's always hardcoded now
     difficulty = None
 
-
-
     running = True
     while running:
         screen.fill(WHITE)
         # System buttons (Quit / Restart)
-        if handle_system_buttons():    
-            show_loading_screen()        # user clicked Restart
-            moves, boards_won, turn, current_board, winner, _ = reset_game()
+        if restart_button.draw(screen):
+            show_loading_screen()
+            moves, boards_won, turn, current_board, winner, ai_mode = reset_game()
             ai_mode = select_mode()
             if ai_mode is None:
                 pygame.quit()
                 sys.exit()
-
             show_loading_screen()
 
-            # We skip difficulty since it's always hardcoded now
             difficulty = None
-           # you already have this logic in your reset section
-            continue                           # skip the rest of this frame
+            continue
         # Draw the game state
         draw_grid()
         draw_moves(moves, boards_won, current_board)
-        turn_color = RED if turn == "X" else BLUE
-        turn_text = FONT.render(f"{turn}'s Turn", True, turn_color)
-        screen.blit(turn_text, (WIDTH // 2 - turn_text.get_width() // 2, HEIGHT - 30))
 
-        if winner:
-            text = FONT.render(f"{winner} wins!", True, BLACK)
-            screen.blit(text, (WIDTH // 2 - 70, HEIGHT - 40))
-
-        if not winner and all(board != "" or all(cell != "" for cell in moves[i]) for i, board in enumerate(boards_won)):
-            winner = "Tie"
-
-
-        if not winner:
+        if winner == "":
+            turn_color = RED if turn == "X" else BLUE
             turn_text = FONT.render(f"{turn}'s Turn", True, turn_color)
             screen.blit(turn_text, (WIDTH // 2 - turn_text.get_width() // 2, HEIGHT - 30))
-
+        elif winner == "Tie":
+            tie_text = FONT.render("It's a Tie!", True, DARK_GRAY)
+            screen.blit(tie_text, (WIDTH // 2 - tie_text.get_width() // 2, HEIGHT - 30))
+        else:
+            win_text = FONT.render(f"{winner} Wins!", True, BLACK)
+            screen.blit(win_text, (WIDTH // 2 - win_text.get_width() // 2, HEIGHT - 30))
 
 
         pygame.display.flip()

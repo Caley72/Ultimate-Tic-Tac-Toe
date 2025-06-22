@@ -17,7 +17,7 @@ Where You Play:
 
 Your move in a small board sends your opponent to a specific board:
 
-If you play in the top-left space of a small board, your opponent’s next move must be in the top-left small board of the global grid.
+If you play in the top-left space of a local board, your opponent’s next move must be in the top-left small board of the global board.
 
 The location inside the small board determines the next board for your opponent.
 
