@@ -2,7 +2,6 @@ import pygame
 import sys
 import random
 import time
-import os
 
 pygame.init()
 pygame.mixer.init()
@@ -15,11 +14,21 @@ pygame.display.set_icon(logo)
 # Sound Variables
 click_sound = pygame.mixer.Sound("assets/sound/click.mp3")
 win_sound = pygame.mixer.Sound("assets/sound/win.mp3")
-Cinematic_Dark = pygame.mixer.Sound("assets/sound/cinematic-dark-trailer-130489.mp3")
-Coding_Night = pygame.mixer.Sound("assets/sound/coding-night-112186.mp3")
-Abstract_Glitch = pygame.mixer.Sound("assets/sound/experimental-abstract-tech-glitch-179496.mp3")
-Energetic_Rock = pygame.mixer.Sound("assets/sound/energetic-rock-trailer-140906.mp3")
-Abstract_Glitch.play()
+first = pygame.mixer.Sound("assets/sound/experimental-abstract-tech-glitch-179496.mp3")
+second = pygame.mixer.Sound("assets/sound/cinematic-dark-trailer-130489.mp3")
+third = pygame.mixer.Sound("assets/sound/coding-night-112186.mp3")
+forth = pygame.mixer.Sound("assets/sound/many-moons-of-saturn-146147.mp3")
+
+MUSIC_TRACKS = {
+    "Abstract Glitch": first,
+    "Cinematic Dark": second,
+    "Coding Night": third,
+    "Saturn Moons": forth
+}
+
+dropdown_open = False
+selected_track_name = "Abstract Glitch"
+current_music = None
 
 # Images
 ai_button_img = pygame.image.load("assets/images/ai-mode.png")
@@ -42,13 +51,7 @@ BLUE = (100, 100, 255)
 GREEN = (0, 200, 0)
 RED = (255, 50, 50)
 
-emoji_font_path = "assets/fonts/NotoColorEmoji.ttf"
-if os.path.exists(emoji_font_path):
-    FONT = pygame.font.Font(emoji_font_path, 40)
-    BIG_FONT = pygame.font.Font(emoji_font_path, 80)
-else:
-    FONT = pygame.font.SysFont("Segoe UI Emoji", 40)
-    BIG_FONT = pygame.font.SysFont("Segoe UI Emoji", 80)
+FONT = pygame.font.SysFont(None, 40)
 
 screen_info = pygame.display.Info()
 SCREEN_WIDTH, SCREEN_HEIGHT = screen_info.current_w, screen_info.current_h
@@ -68,6 +71,21 @@ GREEN = (0, 200, 0)
 RED = (255, 50, 50)
 DARK_GRAY = (50, 50, 50)  # ← Add this
 
+LOADING_TIPS = [
+    "Tip: Focus the center, control the grid.",
+    "Hint: Corners aren't just edges — they’re strategy.",
+    "Tip: Outthink, don’t just outplay.",
+    "Hint: Use small wins to control the big board.",
+    "Tip: The last move can set the next trap.",
+    "💡 Tip: Winning one board isn't enough. Think ahead.",
+    "🤖 Did you know? The AI thinks 6 moves deep.",
+    "🎯 Strategy: Send your opponent to weak boards.",
+    "🌀 Rule: You must play in the board matching the cell you last picked.",
+    "🔥 Pro Tip: Force a draw on a board to open up options.",
+    "👁 Watch closely — your move decides theirs.",
+    "⚔️ Rule: 3 local wins = global domination.",
+    "⏳ Each move shapes the future. Plan wisely."
+]
 
 def draw_grid():
     for i in range(1, GRID_SIZE):
@@ -156,6 +174,83 @@ class Button:
             self.clicked = False
         return action
 
+class Dropdown:
+    def __init__(self, title, options, pos, width=200, height=40):
+        self.title = title
+        self.options = options
+        self.pos = pos
+        self.width = width
+        self.height = height
+        self.open = False
+        self.hover_index = -1
+        self.selected = title
+        self.font = pygame.font.SysFont(None, 32)
+        self.disabled_zone = []
+
+    def is_open(self):
+        return self.open
+
+    def blocks_input_at(self, pos):
+        return any(rect.collidepoint(pos) for rect in self.disabled_zone)
+
+    def draw(self, screen):
+        mouse = pygame.mouse.get_pos()
+        click = pygame.mouse.get_pressed()[0]
+
+        # --- Draw main dropdown box
+        rect = pygame.Rect(self.pos[0], self.pos[1], self.width, self.height)
+
+        # Hover effect
+        is_hover = rect.collidepoint(mouse)
+        color = (220, 220, 220) if is_hover else (200, 200, 200)
+
+        pygame.draw.rect(screen, color, rect)
+        pygame.draw.rect(screen, (0, 0, 0), rect, 2)
+
+        text = self.font.render(self.selected, True, (0, 0, 0))
+        screen.blit(text, (self.pos[0] + 10, self.pos[1] + 8))
+
+        # Handle dropdown click toggle
+        if click and is_hover:
+            self.open = not self.open
+            pygame.time.wait(150)
+
+        # --- Draw dropdown options
+        self.disabled_zone = [rect]
+        if self.open:
+            for i, option in enumerate(self.options):
+                option_rect = pygame.Rect(self.pos[0], self.pos[1] + (i + 1) * self.height, self.width, self.height)
+                is_option_hover = option_rect.collidepoint(mouse)
+
+                # Background hover color
+                bg_color = (180, 180, 180) if is_option_hover else (220, 220, 220)
+                pygame.draw.rect(screen, bg_color, option_rect)
+                pygame.draw.rect(screen, (0, 0, 0), option_rect, 1)
+
+                opt_text = self.font.render(option, True, (0, 0, 0))
+                screen.blit(opt_text, (option_rect.x + 10, option_rect.y + 8))
+
+                self.disabled_zone.append(option_rect)
+
+                if click and is_option_hover:
+                    self.selected = option
+                    self.open = False
+                    pygame.time.wait(150)
+
+                    # Music switch
+                    global selected_track_name, current_music
+                    selected_track_name = self.selected
+                    if current_music:
+                        current_music.stop()
+                    current_music = MUSIC_TRACKS[self.selected]
+                    current_music.play(-1)
+
+    def is_open(self):
+        return self.open
+
+    def blocks_input_at(self, pos):
+        return any(rect.collidepoint(pos) for rect in self.disabled_zone)
+
 def check_win(board):
     lines = [
         [0,1,2], [3,4,5], [6,7,8],
@@ -191,7 +286,7 @@ def ai_move(moves, boards_won, current_board):
             boards_to_check = valid_boards
 
         best_score = float('-inf') if is_max else float('inf')
-        best_move = (None, None)
+        best_moves = []
 
         for board in boards_to_check:
             for cell in range(9):
@@ -215,25 +310,33 @@ def ai_move(moves, boards_won, current_board):
                     if is_max:
                         if score > best_score:
                             best_score = score
-                            best_move = (board, cell)
+                            best_moves = [(board, cell)]
+                        elif score == best_score:
+                            best_moves.append((board, cell))
                         alpha = max(alpha, score)
                     else:
                         if score < best_score:
                             best_score = score
-                            best_move = (board, cell)
+                            best_moves = [(board, cell)]
+                        elif score == best_score:
+                            best_moves.append((board, cell))
                         beta = min(beta, score)
 
                     if beta <= alpha:
                         break
+        if best_moves:
+            best_move = random.choice(best_moves)
+        else:
+            best_move = (None, None)
 
         return best_score, best_move[0], best_move[1]
-
     _, b, c = minimax(moves, boards_won, current_board, depth=6, alpha=float("-inf"), beta=float("inf"), is_max=True, ai="O", player="X")
     return b, c
 def reset_game():
     return [["" for _ in range(9)] for _ in range(9)], ["" for _ in range(9)], "X", None, "", False 
-def show_loading_screen(duration=1.5):  # duration in seconds
+def show_loading_screen(duration=3.5):  # duration in seconds
     start_time = time.time()
+    tip = random.choice(LOADING_TIPS)  # ← Select a random tip each time
     bar_width = 400
     bar_height = 30
     bar_x = SCREEN_WIDTH // 2 - bar_width // 2
@@ -243,80 +346,195 @@ def show_loading_screen(duration=1.5):  # duration in seconds
 
     while time.time() - start_time < duration:
         screen.fill(DARK_GRAY)
-
-        # Title text
+        # Tip text
+        tip_rendered = FONT.render(tip, True, WHITE)
+        screen.blit(tip_rendered, (SCREEN_WIDTH // 2 - tip_rendered.get_width() // 2, SCREEN_HEIGHT // 2 - 100))
+        # Loading text
         text = BIG_FONT.render("Loading...", True, WHITE)
         screen.blit(text, (SCREEN_WIDTH // 2 - text.get_width() // 2, SCREEN_HEIGHT // 2 - 50))
-
         # Calculate progress
         elapsed = time.time() - start_time
         progress = min(elapsed / duration, 1)
         current_width = int(bar_width * progress)
-
         # Draw bar border
         pygame.draw.rect(screen, border_color, (bar_x, bar_y, bar_width, bar_height), 2)
-
         # Draw filled bar
         pygame.draw.rect(screen, load_color, (bar_x, bar_y, current_width, bar_height))
 
         pygame.display.flip()
         clock.tick(60)
 
+def blocks_input_at(self, pos):
+    return any(rect.collidepoint(pos) for rect in self.disabled_zone)
+
 def select_mode():
+    global current_music
+    if current_music:
+        current_music.play(-1)
+    else:
+        current_music = MUSIC_TRACKS[selected_track_name]
+        current_music.play(-1)
+
     ai_button = Button(ai_button_img, (SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 - 80))
     multi_button = Button(multi_button_img, (SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 + 80))
-    help_button = Button(info_btn_img, (SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 + 200), scale=0.7)
+    info_button = Button(info_btn_img,(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 + 200), scale=0.7)
+    dropdown = Dropdown("Abstract Glitch", list(MUSIC_TRACKS.keys()), (SCREEN_WIDTH // 2 - 100, 100))
+
     while True:
         screen.fill(WHITE)
-        if ai_button.draw(screen):
+        dropdown.draw(screen)
+        mouse_pos = pygame.mouse.get_pos()
+        # Only allow button clicks if dropdown isn't in the way
+        if ai_button.draw(screen) and not dropdown.blocks_input_at(mouse_pos):
             return True
         if multi_button.draw(screen):
             return False
-        if help_button.draw(screen):
+        if info_button.draw(screen):
             show_rules_screen()
-        if quit_button.draw(screen):
-            pygame.quit()
-            sys.exit()
+        if handle_system_buttons():
+            return None
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit()
                 sys.exit()
+            elif event.type == pygame.USEREVENT + 1:
+                if current_music:
+                    current_music.play(-1)
+
+            # Optional: if user clicks and dropdown blocks, skip all clicks
+            if event.type == pygame.MOUSEBUTTONDOWN and dropdown.blocks_input_at(event.pos):
+                continue  # Ignore this click
 
         pygame.display.update()
         clock.tick(60)
 
+def wrap_text(text, font, max_width):
+    words = text.split(' ')
+    lines = []
+    current_line = ""
+
+    for word in words:
+        test_line = current_line + word + " "
+        if font.size(test_line)[0] <= max_width:
+            current_line = test_line
+        else:
+            lines.append(current_line)
+            current_line = word + " "
+    lines.append(current_line)
+    return lines
+
 def show_rules_screen():
     try:
-        with open("rule.txt", "r", encoding="utf-8") as f:
-            lines = f.readlines()
+        with open("rules.txt", "r", encoding="utf-8") as f:
+            raw_lines = f.readlines()
     except Exception as e:
-        lines = [f"Error loading rules: {str(e)}"]
+        raw_lines = [f"Error loading rules: {str(e)}"]
 
+    # Word-wrap and center
+    margin_x = 50
+    line_spacing = 10
+    wrapped_lines = []
+    for line in raw_lines:
+        wrapped = wrap_text(line.strip(), FONT, SCREEN_WIDTH - 2 * margin_x)
+        wrapped_lines.extend(wrapped)
 
-    # Create the back button (top-left corner)
-    back_button = Button(back_button_img, (60, 60), scale=0.5)
+    # Prepare scroll
+    scroll_y = 0
+    velocity = 0
+    friction = 0.9
+    dragging = False
+    drag_start_y = 0
+    content_height = len(wrapped_lines) * (FONT.get_height() + line_spacing)
+    max_scroll = max(0, content_height - (SCREEN_HEIGHT - 200))  # leave room for top buttons
+
+    # Back button
+    back_button = Button(back_button_img, (SCREEN_WIDTH // 2, 80), scale=0.5)
+
+    # Fade-in
+    fade_surface = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT))
+    fade_surface.fill((0, 0, 0))
+    fade_alpha = 255
+
     showing = True
     while showing:
-        screen.fill((0, 0, 0))  # Black background
+        screen.fill(BLACK)
 
-        # Draw the rules
-        y = 100
-        for line in lines:
+        # Handle scroll inertia
+        if not dragging:
+            scroll_y += velocity
+            velocity *= friction
+            if abs(velocity) < 0.5:
+                velocity = 0
+        scroll_y = max(0, min(scroll_y, max_scroll))
+
+        # Draw text
+        y = 150 - scroll_y
+        for line in wrapped_lines:
             rendered = FONT.render(line.strip(), True, WHITE)
-            screen.blit(rendered, (50, y))
-            y += 40
+            x = SCREEN_WIDTH // 2 - rendered.get_width() // 2
+            screen.blit(rendered, (x, y))
+            y += rendered.get_height() + line_spacing
 
         # Draw back button
         if back_button.draw(screen):
             showing = False
 
+        # Scrollbar (right edge)
+        if content_height > SCREEN_HEIGHT - 200:
+            bar_height = int((SCREEN_HEIGHT - 200) * (SCREEN_HEIGHT - 200) / content_height)
+            bar_y = int((SCREEN_HEIGHT - 200) * scroll_y / content_height) + 150
+            pygame.draw.rect(screen, (100, 100, 100), (SCREEN_WIDTH - 10, bar_y, 5, bar_height), border_radius=3)
+
+        # Hint text (top-center)
+        if scroll_y < 20:
+            hint_text = FONT.render("⬆️ Swipe up to read more ⬇️", True, (150, 150, 150))
+            screen.blit(hint_text, (SCREEN_WIDTH // 2 - hint_text.get_width() // 2, 120))
+
+        # Fade-in
+        if fade_alpha > 0:
+            fade_surface.set_alpha(fade_alpha)
+            screen.blit(fade_surface, (0, 0))
+            fade_alpha -= 15
+
         pygame.display.flip()
 
+        # Event handling
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit()
                 sys.exit()
+
+            elif event.type == pygame.MOUSEBUTTONDOWN:
+                if event.button == 1:
+                    dragging = True
+                    drag_start_y = event.pos[1]
+                    velocity = 0
+
+            elif event.type == pygame.MOUSEBUTTONUP:
+                if event.button == 1:
+                    dragging = False
+
+            elif event.type == pygame.MOUSEMOTION:
+                if dragging:
+                    dy = event.pos[1] - drag_start_y
+                    scroll_y -= dy
+                    velocity = -dy
+                    drag_start_y = event.pos[1]
+
+            elif event.type == pygame.FINGERDOWN:
+                dragging = True
+                drag_start_y = event.y * SCREEN_HEIGHT
+                velocity = 0
+
+            elif event.type == pygame.FINGERMOTION:
+                if dragging:
+                    dy = event.dy * SCREEN_HEIGHT
+                    scroll_y -= dy
+                    velocity = -dy
+
+            elif event.type == pygame.FINGERUP:
+                dragging = False
 # ── Top-right utility buttons ──────────────────────────────────────────
 BUTTON_SCALE  = 0.5          # shrink large PNGs
 BUTTON_PAD    = 20           # distance from screen edges / between buttons
@@ -340,6 +558,9 @@ restart_button = Button(
     ),
     scale=BUTTON_SCALE
 )
+# ───────────────────────────────────────────────────────────────────────
+FONT = pygame.font.SysFont(None, 40)
+BIG_FONT = pygame.font.SysFont(None, 80)  # Add this line
 def handle_system_buttons():
     """Draw Quit / Restart and return True if a restart was clicked."""
     # Draw Quit first so it appears above Restart in z-order
@@ -361,8 +582,6 @@ def main():
     if ai_mode is None:
         pygame.quit()
         sys.exit()
-
-    show_loading_screen()
 
     # We skip difficulty since it's always hardcoded now
     difficulty = None

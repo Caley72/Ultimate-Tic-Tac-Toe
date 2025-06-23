@@ -1,13 +1,10 @@
 Bugs//
-Remove the turn indicator when a winner is found or there is a tie
-Add tie sound
-Fix the difficulty button
-Play the winner sound once
+Add Emoji Font
 New additions and Changes//
-Create extra space outside the playing field (Fullscreen)
-Add help and restart to all screens
-Add a loading screen
 Add credits
+Add tie sound
+Add music sound
+Add Dark Theme
 Multiple Update//
 Add multiplayer over a server or WIFI connection
 Add server multiplayer info to help
