@@ -1,0 +1,32 @@
+For each possible move (in legal boards only):
+
+1. WIN THE LOCAL BOARD
+   - If AI ("O") has two in a row and can win this board:
+     → Make the winning move.
+     → Unless this sends player to a dangerous board, then 50% chance to do it anyway.
+
+2. AVOID PLAYER ADVANTAGE
+   - Check if the move sends the player to a board where they can win (2-in-a-row).
+     → If yes, skip this move (mark it as risky).
+     → If no, add it to safe_moves.
+
+3. BLOCK THE PLAYER'S THREAT
+   - If the player has two in a row in a board:
+     → Block the third cell if it doesn't send AI into danger.
+     → Prefer blocks that don’t send to a risky board.
+
+4. SET TRAPS
+   - Choose a move that sends the player to:
+     - A won board,
+     - A full board,
+     - A harmless board (no player 2-in-a-rows).
+
+5. PRIORITIZE BIG BOARD VICTORY
+   - Among safe or trap moves, prefer ones that:
+     - Win you big-board alignment (horizontal, vertical, diagonal).
+     - E.g., Completing top row in boards 0, 1, 2.
+
+6. FALLBACK
+   - If no safe or smart move:
+     → Pick a risky move randomly.
+     → Sort by big board value if possible.

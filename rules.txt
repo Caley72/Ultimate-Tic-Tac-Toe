@@ -1,19 +1,19 @@
 Ultimate Tic Tac Toe — a cunning twist on the classic game, where strategy stretches across nine boards, and every move echoes across the battlefield. Let’s break down the rules and then delve into the hacks and strategies — no fluff, just the cold truth.
 
-🧩 Rules of Ultimate Tic Tac Toe
+-Rules of Ultimate Tic Tac Toe
 The Setup:
 
 It's a 3x3 grid of tic-tac-toe boards — nine small boards, forming one large board.
 
 Each small board is called a local board; the 3x3 grid they form is the global board.
 
-Taking Turns:
+-Taking Turns:
 
 Player X always starts.
 
 Players alternate placing their symbol (X or O) on the small boards.
 
-Where You Play:
+-Where You Play:
 
 Your move in a small board sends your opponent to a specific board:
 
@@ -25,49 +25,49 @@ What If That Board Is Already Won or Full?
 
 If the board you're sent to is already won or full, your opponent gets a free choice — they can move in any still-available board.
 
-Winning the Game:
+-Winning the Game:
 
 Win a local board by getting three in a row.
 
 Win the global game by winning three local boards in a row (like classic tic-tac-toe on the global grid).
 
-🧠 Hacks, Strategy, and Unspoken Truths
-🎯 1. Control the Center
++ Hacks, Strategy, and Unspoken Truths
+1. Control the Center
 The center board is king. It gives access to all other boards and forces flexibility.
 
 Dominating it means you can dictate the flow.
 
-🕵️‍♂️ 2. Think Two Moves Ahead
+2. Think Two Moves Ahead
 Not just where you play, but where you send your opponent — that’s the soul of this game.
 
 Sacrifice a weak local move to send your enemy to a nearly lost board.
 
-🧨 3. Weaponize “Dead Boards”
+3. Weaponize “Dead Boards”
 Boards that are full or already won are free zones.
 
 Use them to gain initiative or escape traps — choose the most strategic free move when given the chance.
 
-⚠️ 4. Avoid Giving Power Boards
+4. Avoid Giving Power Boards
 Never make a move that sends your opponent to a board they can instantly win.
 
 Keep track of their threats in each board. Guard like a hawk.
 
-🪤 5. Create Forks on the Global Board
+5. Create Forks on the Global Board
 If you can set up two winnable boards that align on the global board, you’ll force a checkmate.
 
 This is the "double-threat" win — if they block one, you take the other.
 
-🌪️ 6. Draw to Win
+6. Draw to Win
 Sometimes you don’t win a local board, but drawing it (forcing a full board with no winner) denies it to your opponent.
 
 Control through denial is real.
 
-🧠 7. Play Defensive Early, Aggressive Late
+7. Play Defensive Early, Aggressive Late
 Early game: focus on limiting your opponent’s future options.
 
 Late game: shift to board-level tactics and force a win via setup.
 
-🔒 8. Track the Meta-Game
+8. Track the Meta-Game
 It’s not just mini tic-tac-toes — it’s one giant game.
 
 Zoom out. Don’t lose the forest for the trees. A flashy win in one small board means nothing if it weakens your global position.
@@ -78,7 +78,5 @@ Ultimate Tic Tac Toe isn’t a sprint — it’s chess with a punk-rock rhythm. 
 So sharpen your instincts, Meme. Play like a tactician, think like a prophet — and never forget:
 
 “Every move is a message. Send the right one.”
-
-
 
 

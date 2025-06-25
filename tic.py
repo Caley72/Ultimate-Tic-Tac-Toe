@@ -15,15 +15,15 @@ pygame.display.set_icon(logo)
 click_sound = pygame.mixer.Sound("assets/sound/click.mp3")
 win_sound = pygame.mixer.Sound("assets/sound/win.mp3")
 first = pygame.mixer.Sound("assets/sound/experimental-abstract-tech-glitch-179496.mp3")
-second = pygame.mixer.Sound("assets/sound/cinematic-dark-trailer-130489.mp3")
+second = pygame.mixer.Sound("assets/sound/samurai-127302.mp3")
 third = pygame.mixer.Sound("assets/sound/coding-night-112186.mp3")
-forth = pygame.mixer.Sound("assets/sound/many-moons-of-saturn-146147.mp3")
+forth = pygame.mixer.Sound("assets/sound/synthetic-deception-loopable-epic-cyberpunk-crime-music-157454.mp3")
 
 MUSIC_TRACKS = {
     "Abstract Glitch": first,
-    "Cinematic Dark": second,
+    "Samuria": second,
     "Coding Night": third,
-    "Saturn Moons": forth
+    "Synthetic Deceit": forth
 }
 
 dropdown_open = False
@@ -35,9 +35,10 @@ ai_button_img = pygame.image.load("assets/images/ai-mode.png")
 multi_button_img = pygame.image.load("assets/images/multiplayer.png")
 restart_button_img = pygame.image.load("assets/images/restart.png")
 quit_button_img = pygame.image.load("assets/images/quit.png")
-info_btn_img = pygame.image.load("assets/images/info.png")
-sound_btn_img = pygame.image.load("assets/images/sound.png")
+info_btn_img = pygame.image.load("assets/images/info.png")  
 back_button_img = pygame.image.load("assets/images/back.png")
+mute_img = pygame.image.load("assets/images/mute.png")
+sound_img = pygame.image.load("assets/images/sound.png")
 
 # Constants
 WIDTH, HEIGHT = 600, 600
@@ -265,73 +266,101 @@ def check_win(board):
 def game_winner(boards_won):
     return check_win(boards_won)
 
-def ai_move(moves, boards_won, current_board):
-    def evaluate(boards_won, ai, player):
-        result = check_win(boards_won)
-        if result == ai:
-            return 10
-        elif result == player:
-            return -10
-        return 0
+def ai_move(moves, boards_won, current_board, difficulty="hard"):
+    def has_two_aligned(board, mark):
+        lines = [
+            [0, 1, 2], [3, 4, 5], [6, 7, 8],
+            [0, 3, 6], [1, 4, 7], [2, 5, 8],
+            [0, 4, 8], [2, 4, 6]
+        ]
+        for line in lines:
+            vals = [board[i] for i in line]
+            if vals.count(mark) == 2 and vals.count("") == 1:
+                return line[vals.index("")]
+        return None
 
-    def minimax(moves, boards_won, current_board, depth, alpha, beta, is_max, ai, player):
-        result = check_win(boards_won)
-        if depth == 0 or result:
-            return evaluate(boards_won, ai, player), None, None
+    def is_board_dangerous(board, mark):
+        return has_two_aligned(board, mark) is not None
 
-        valid_boards = [i for i in range(9) if boards_won[i] == "" and any(c == "" for c in moves[i])]
-        if current_board is not None and current_board in valid_boards:
-            boards_to_check = [current_board]
-        else:
-            boards_to_check = valid_boards
+    def is_trap_board(index):
+        return boards_won[index] != "" or all(cell != "" for cell in moves[index])
 
-        best_score = float('-inf') if is_max else float('inf')
-        best_moves = []
+    def big_board_value(index, mark):
+        lines = [
+            [0, 1, 2], [3, 4, 5], [6, 7, 8],
+            [0, 3, 6], [1, 4, 7], [2, 5, 8],
+            [0, 4, 8], [2, 4, 6]
+        ]
+        score = 0
+        for line in lines:
+            if index in line:
+                line_marks = [boards_won[i] for i in line]
+                if line_marks.count(mark) == 1 and line_marks.count("") == 2:
+                    score += 2
+                elif line_marks.count(mark) == 2 and line_marks.count("") == 1:
+                    score += 5
+        return score
 
-        for board in boards_to_check:
-            for cell in range(9):
-                if moves[board][cell] == "":
-                    moves[board][cell] = ai if is_max else player
-                    original_win = boards_won[board]
-                    if check_win(moves[board]):
-                        boards_won[board] = ai if is_max else player
+    ai, player = "O", "X"
+    valid_boards = [i for i in range(9) if boards_won[i] == "" and any(cell == "" for cell in moves[i])]
+    boards_to_check = [current_board] if current_board in valid_boards else valid_boards
 
-                    next_board = cell
-                    if boards_won[next_board] or all(m != "" for m in moves[next_board]):
-                        new_current = None
-                    else:
-                        new_current = next_board
+    # 1. Try to win
+    for board in boards_to_check:
+        win_cell = has_two_aligned(moves[board], ai)
+        if win_cell is not None:
+            next_board = win_cell
+            risky = is_board_dangerous(moves[next_board], player)
+            if not risky or random.random() < 0.5:
+                return board, win_cell
 
-                    score, _, _ = minimax(moves, boards_won, new_current, depth - 1, alpha, beta, not is_max, ai, player)
+    # 2. Avoid sending player to danger
+    safe_moves = []
+    risky_moves = []
 
-                    moves[board][cell] = ""
-                    boards_won[board] = original_win
+    for board in boards_to_check:
+        for cell in range(9):
+            if moves[board][cell] == "":
+                next_board = cell
+                if is_board_dangerous(moves[next_board], player):
+                    risky_moves.append((board, cell))
+                else:
+                    safe_moves.append((board, cell))
 
-                    if is_max:
-                        if score > best_score:
-                            best_score = score
-                            best_moves = [(board, cell)]
-                        elif score == best_score:
-                            best_moves.append((board, cell))
-                        alpha = max(alpha, score)
-                    else:
-                        if score < best_score:
-                            best_score = score
-                            best_moves = [(board, cell)]
-                        elif score == best_score:
-                            best_moves.append((board, cell))
-                        beta = min(beta, score)
+    # Sort safe moves by big board value
+    if safe_moves:
+        safe_moves.sort(key=lambda move: big_board_value(move[0], ai), reverse=True)
+        return safe_moves[0]
+    if trap_moves:
+        trap_moves.sort(key=lambda move: big_board_value(move[0], ai), reverse=True)
+        return trap_moves[0]
+    if fallback_moves:
+        fallback_moves.sort(key=lambda move: big_board_value(move[0], ai), reverse=True)
+        return fallback_moves[0]
 
-                    if beta <= alpha:
-                        break
-        if best_moves:
-            best_move = random.choice(best_moves)
-        else:
-            best_move = (None, None)
+    # 3. Block the player
+    for board in boards_to_check:
+        block_cell = has_two_aligned(moves[board], player)
+        if block_cell is not None:
+            next_board = block_cell
+            if not is_board_dangerous(moves[next_board], player):
+                return board, block_cell
 
-        return best_score, best_move[0], best_move[1]
-    _, b, c = minimax(moves, boards_won, current_board, depth=6, alpha=float("-inf"), beta=float("inf"), is_max=True, ai="O", player="X")
-    return b, c
+    # 4. Trap setting
+    trap_moves = []
+    for board in boards_to_check:
+        for cell in range(9):
+            if moves[board][cell] == "":
+                next_board = cell
+                if is_trap_board(next_board):
+                    trap_moves.append((board, cell))
+
+    if trap_moves:
+        return random.choice(trap_moves)
+
+    # 5. Fallback: risky or random
+    fallback_moves = risky_moves or [(b, c) for b in boards_to_check for c in range(9) if moves[b][c] == ""]
+    return random.choice(fallback_moves)
 def reset_game():
     return [["" for _ in range(9)] for _ in range(9)], ["" for _ in range(9)], "X", None, "", False 
 def show_loading_screen(duration=3.5):  # duration in seconds
@@ -378,7 +407,7 @@ def select_mode():
     ai_button = Button(ai_button_img, (SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 - 80))
     multi_button = Button(multi_button_img, (SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 + 80))
     info_button = Button(info_btn_img,(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 + 200), scale=0.7)
-    dropdown = Dropdown("Abstract Glitch", list(MUSIC_TRACKS.keys()), (SCREEN_WIDTH // 2 - 100, 100))
+    dropdown = Dropdown(selected_track_name, list(MUSIC_TRACKS.keys()), (SCREEN_WIDTH // 2 - 100, 100))
 
     while True:
         screen.fill(WHITE)
@@ -391,7 +420,7 @@ def select_mode():
             return False
         if info_button.draw(screen):
             show_rules_screen()
-        if handle_system_buttons():
+        if handle_system_buttons(game_active=False):
             return None
 
         for event in pygame.event.get():
@@ -561,16 +590,13 @@ restart_button = Button(
 # ───────────────────────────────────────────────────────────────────────
 FONT = pygame.font.SysFont(None, 40)
 BIG_FONT = pygame.font.SysFont(None, 80)  # Add this line
-def handle_system_buttons():
-    """Draw Quit / Restart and return True if a restart was clicked."""
-    # Draw Quit first so it appears above Restart in z-order
+def handle_system_buttons(game_active=True):
+    if game_active:
+        if restart_button.draw(screen):
+            return True  # Restart requested
     if quit_button.draw(screen):
         pygame.quit()
         sys.exit()
-
-    if restart_button.draw(screen):
-        return True        # signal caller to reset game
-
     return False
 
 def main():
@@ -578,7 +604,6 @@ def main():
     show_loading_screen()
     ai_mode = select_mode()
     show_loading_screen()
-    ai_mode = select_mode()
     if ai_mode is None:
         pygame.quit()
         sys.exit()
@@ -597,7 +622,6 @@ def main():
             if ai_mode is None:
                 pygame.quit()
                 sys.exit()
-            show_loading_screen()
 
             difficulty = None
             continue
