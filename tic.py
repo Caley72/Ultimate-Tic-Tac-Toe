@@ -37,8 +37,9 @@ restart_button_img = pygame.image.load("assets/images/restart.png")
 quit_button_img = pygame.image.load("assets/images/quit.png")
 info_btn_img = pygame.image.load("assets/images/info.png")  
 back_button_img = pygame.image.load("assets/images/back.png")
-mute_img = pygame.image.load("assets/images/mute.png")
-sound_img = pygame.image.load("assets/images/sound.png")
+WIDTH, HEIGHT = 600, 600
+board_bg = pygame.image.load("assets/images/back3.jpg")
+board_bg = pygame.transform.scale(board_bg, (WIDTH + 60, HEIGHT + 60))
 
 # Constants
 WIDTH, HEIGHT = 600, 600
@@ -78,14 +79,15 @@ LOADING_TIPS = [
     "Tip: Outthink, don’t just outplay.",
     "Hint: Use small wins to control the big board.",
     "Tip: The last move can set the next trap.",
-    "💡 Tip: Winning one board isn't enough. Think ahead.",
-    "🤖 Did you know? The AI thinks 6 moves deep.",
-    "🎯 Strategy: Send your opponent to weak boards.",
-    "🌀 Rule: You must play in the board matching the cell you last picked.",
-    "🔥 Pro Tip: Force a draw on a board to open up options.",
-    "👁 Watch closely — your move decides theirs.",
-    "⚔️ Rule: 3 local wins = global domination.",
-    "⏳ Each move shapes the future. Plan wisely."
+    "Tip: Winning one board isn't enough. Think ahead.",
+    "Did you know? The AI thinks 6 moves deep.",
+    "Strategy: Send your opponent to weak boards.",
+    "The AI adapts — break patterns to stay unpredictable.",
+    "Rule: You must play in the board matching the cell you last picked.",
+    "Pro Tip: Force a draw on a board to open up options.",
+    "Watch closely — your move decides theirs.",
+    "Rule: 3 local wins = global domination.",
+    "Hint: Each move shapes the future. Plan wisely."
 ]
 
 def draw_grid():
@@ -305,6 +307,12 @@ def ai_move(moves, boards_won, current_board, difficulty="hard"):
     valid_boards = [i for i in range(9) if boards_won[i] == "" and any(cell == "" for cell in moves[i])]
     boards_to_check = [current_board] if current_board in valid_boards else valid_boards
 
+    #Call moves
+    safe_moves = []
+    risky_moves = []
+    trap_moves = []
+    fallback_moves = []
+
     # 1. Try to win
     for board in boards_to_check:
         win_cell = has_two_aligned(moves[board], ai)
@@ -315,9 +323,6 @@ def ai_move(moves, boards_won, current_board, difficulty="hard"):
                 return board, win_cell
 
     # 2. Avoid sending player to danger
-    safe_moves = []
-    risky_moves = []
-
     for board in boards_to_check:
         for cell in range(9):
             if moves[board][cell] == "":
@@ -347,7 +352,6 @@ def ai_move(moves, boards_won, current_board, difficulty="hard"):
                 return board, block_cell
 
     # 4. Trap setting
-    trap_moves = []
     for board in boards_to_check:
         for cell in range(9):
             if moves[board][cell] == "":
@@ -517,7 +521,7 @@ def show_rules_screen():
 
         # Hint text (top-center)
         if scroll_y < 20:
-            hint_text = FONT.render("⬆️ Swipe up to read more ⬇️", True, (150, 150, 150))
+            hint_text = FONT.render("⬆ Swipe up to read more ⬇", True, (150, 150, 150))
             screen.blit(hint_text, (SCREEN_WIDTH // 2 - hint_text.get_width() // 2, 120))
 
         # Fade-in
@@ -626,6 +630,7 @@ def main():
             difficulty = None
             continue
         # Draw the game state
+        screen.blit(board_bg, (OFFSET_X - 30, OFFSET_Y - 30))  # adjust offsets to center it properly
         draw_grid()
         draw_moves(moves, boards_won, current_board)
 

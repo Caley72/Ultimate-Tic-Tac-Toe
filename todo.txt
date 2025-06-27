@@ -1,6 +1,8 @@
 Bugs//
 Add Emoji Font
 New additions and Changes//
+Add Learning
+Add background to background
 Add credits
 Add tie sound
 Add music sound
